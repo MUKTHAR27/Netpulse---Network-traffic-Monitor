@@ -4,20 +4,13 @@ A small REST API that logs network traffic events, flags IPs whose
 cumulative usage crosses a threshold, and supports blocking/unblocking
 IPs — with a full pytest test suite (18 tests, 93% coverage).
 
-## Why it's structured this way
-
-Three files, three jobs — this separation is worth explaining out loud in
-an interview if asked "why did you organize it like this?":
-
+#
 | File | Responsibility |
 |---|---|
 | `db.py` | All database reads/writes (SQLite). Nothing here knows about HTTP. |
 | `detector.py` | Pure anomaly-detection logic. Takes a dict in, returns a list out. No database, no Flask. |
 | `app.py` | Flask routes. Parses requests, calls `db.py`/`detector.py`, returns JSON. No business logic lives here. |
 
-Keeping logic out of the routes is what makes each piece independently
-testable — `test_detector.py` needs zero setup (no DB, no server) because
-`detector.py` has no side effects.
 
 ## Setup & run
 
@@ -26,7 +19,7 @@ pip install -r requirements.txt
 python app.py          # starts the API on http://127.0.0.1:5000
 ```
 
-## Run the tests
+##For running tests
 
 ```bash
 pytest -v                              # run all 18 tests
