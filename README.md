@@ -43,44 +43,4 @@ pytest -v --cov=app --cov=db --cov=detector --cov-report=term-missing
 | POST | `/api/block` | `{"ip": "1.2.3.4"}` | Block an IP |
 | POST | `/api/unblock` | `{"ip": "1.2.3.4"}` | Unblock an IP |
 
-## A real bug this test suite caught
 
-Worth knowing this story for an interview — it's a genuinely good answer
-to "tell me about a bug you found while testing."
-
-The first version of `db.py` had functions like:
-
-```python
-def log_traffic(ip, bytes_transferred, db_path=DB_PATH):
-```
-
-That looks fine, but Python evaluates default argument values **once, at
-import time** — not every time the function is called. So when the test
-suite reassigned `db.DB_PATH` to point at a temporary test database (to
-avoid polluting the real one), the already-defined default in
-`log_traffic` didn't notice — it kept pointing at the original path,
-and every insert failed with `no such table: traffic`.
-
-Fix: default to `db_path=None`, then resolve it to `DB_PATH` **inside**
-the function body, so it re-reads the current value on every call.
-
-This is exactly the kind of thing tests are for — the bug was invisible
-by inspection but immediately obvious the moment real test cases ran
-against it.
-
-## Test suite structure
-
-- `test_detector.py` — unit tests for pure logic (thresholds, sorting,
-  boundary case at exactly the threshold, empty input).
-- `test_app.py` — API-level tests using Flask's test client against a
-  temporary SQLite file per test (via pytest's `tmp_path` fixture), so
-  tests never touch the real database and never leak state into each
-  other. Covers happy paths and negative/invalid-input cases for every
-  route.
-
-## Next steps if you want to extend this
-
-- Add a `/api/traffic/<ip>` route to get one IP's full history.
-- Add input validation for malformed IP strings.
-- Swap the fixed 10MB threshold for a per-IP baseline (e.g. flag anything
-  3x above that IP's rolling average).
